@@ -1,6 +1,7 @@
 import { Command, flags } from "@oclif/command";
 import { execSync } from "child_process";
 import * as fs from "fs-extra";
+import * as filesys from "fs";
 import * as request from "superagent";
 import * as Zip from "adm-zip";
 import cli from "cli-ux";
@@ -31,12 +32,9 @@ export default class New extends Command {
     cli.action.start("- contract");
 
     if (flags.path) {
-
-      console.log(`[ new.ts ]: changed dir to ${flags.path} `)
       process.chdir(flags.path);
     }
 
-    console.log(`[ new.ts ]: created dir: ${args.name} `)
     fs.mkdirSync(args.name);
     process.chdir(args.name);
 
@@ -46,10 +44,11 @@ export default class New extends Command {
     // ------------------------------- Contract template
     // https://github.com/InterWasm/cw-template/archive/refs/heads/main.zip
 
-    console.log("Generating cargo template via git download. rEVAMP")
 
     const repoName     = "cw-template"
-    const branch       = "main";
+    // const branch       = "main";
+    const branch      = "0.16";
+    const contractName = "counter";
 
     const contractFile = fs.createWriteStream("contract.zip");
     await new Promise((resolve, reject) => {
@@ -63,8 +62,24 @@ export default class New extends Command {
     const contractZip = new Zip("contract.zip");
     contractZip.extractAllTo(".", true);
 
-    fs.renameSync(`${repoName}-${branch}`, "counter");
+    fs.renameSync(`${repoName}-${branch}`, `${contractName}`);
     fs.removeSync("contract.zip");
+    // Postprocess Cargo.toml - name & authors
+    const Cargotoml = path.resolve(process.cwd(), `${contractName}`,'Cargo.toml')
+    filesys.readFile(Cargotoml, {encoding: 'utf8'},  (e:any,data:any) =>{
+      if (e) { throw e };
+
+      var _ = data
+      .replace(/name = "{{project-name}}"/g, 'name = "terrain-counter-template"')
+      .replace(/authors = \["{{authors}}"\]/g, 'authors = ["terrain-developer"]')
+      
+      filesys.writeFile(Cargotoml, _, 'utf-8', function (err) {
+          if (err) throw err;
+      });
+    });
+
+
+
 
     process.chdir("..");
     cli.action.stop();
