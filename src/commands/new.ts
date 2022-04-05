@@ -47,10 +47,6 @@ export default class New extends Command {
     // https://github.com/InterWasm/cw-template/archive/refs/heads/main.zip
 
     console.log("Generating cargo template via git download. rEVAMP")
-    // execSync(`cargo generate --git https://github.com/CosmWasm/cw-template.git --branch ${flags.version} --name counter`);
-
-
-
 
     const repoName     = "cw-template"
     const branch       = "main";
